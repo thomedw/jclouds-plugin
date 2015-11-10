@@ -27,18 +27,21 @@ public class JCloudsRetentionStrategy extends RetentionStrategy<JCloudsComputer>
             return 1;
         } else {
             try {
-                if (c.isIdle() && !c.getNode().isPendingDelete() && !disabled) {
+                final JCloudsSlave node = c.getNode();
+                if (null != node && c.isIdle() && !node.isPendingDelete() && !disabled) {
                     // Get the retention time, in minutes, from the JCloudsCloud this JCloudsComputer belongs to.
                     final int retentionTime = c.getRetentionTime();
                     // check executor to ensure we are terminating online slaves
                     if (retentionTime > -1 && c.countExecutors() > 0) {
                         final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
+                        LOGGER.fine("Node " + c.getName() + " retentionTime: " + retentionTime + " idle: "
+                                + TimeUnit2.MILLISECONDS.toMinutes(idleMilliseconds) + "min");
                         if (idleMilliseconds > TimeUnit2.MINUTES.toMillis(retentionTime)) {
                             LOGGER.info("Setting " + c.getName() + " to be deleted.");
                             if (!c.isOffline()) {
-                                c.setTemporarilyOffline(true, OfflineCause.create(Messages._DeletedCause()));
+                                c.disconnect(OfflineCause.create(Messages._DeletedCause()));
                             }
-                            c.getNode().setPendingDelete(true);
+                            node.setPendingDelete(true);
                         }
                     }
                 }
@@ -73,6 +76,6 @@ public class JCloudsRetentionStrategy extends RetentionStrategy<JCloudsComputer>
 
     private static final Logger LOGGER = Logger.getLogger(JCloudsRetentionStrategy.class.getName());
 
-    public static boolean disabled = Boolean.getBoolean(JCloudsRetentionStrategy.class.getName() + ".disabled");
+    public static final boolean disabled = Boolean.getBoolean(JCloudsRetentionStrategy.class.getName() + ".disabled");
 
 }

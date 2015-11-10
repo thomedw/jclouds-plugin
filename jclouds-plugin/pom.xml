@@ -14,172 +14,105 @@
     <description>Allows Jenkins to build using Cloud Servers via JClouds</description>
     <url>https://wiki.jenkins-ci.org/display/JENKINS/JClouds+Plugin</url>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.jenkins-ci.main</groupId>
-                <artifactId>jenkins-core</artifactId>
-                <version>${jenkins.parent.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.sonatype.sisu</groupId>
-                        <artifactId>sisu-guava</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jsch</artifactId>
-            <version>${jsch.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>${jsr305.version}</version>
-        </dependency>
         <dependency>
             <groupId>net.sf.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>2.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ssh-slaves</artifactId>
+            <version>1.9</version>
+        </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jclouds-shaded</artifactId>
             <version>2.9-SNAPSHOT</version>
         </dependency>
-        <!-- Test Dependencies -->
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
+
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.jenkins-ci.tools</groupId>
-                    <artifactId>maven-hpi-plugin</artifactId>
-                    <version>${hpi.plugin.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>com.google.guava</groupId>
-                            <artifactId>guava</artifactId>
-                            <version>${guava.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>org.kohsuke.stapler</groupId>
-                            <artifactId>stapler</artifactId>
-                            <version>${stapler.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <configuration>
-                        <dependentWarExcludes>org.apache.jclouds*,com.google.guava*</dependentWarExcludes>
-                        <archive>
-                            <manifestEntries>
-                                <Mask-Classes>com.google.common</Mask-Classes>
-                            </manifestEntries>
-                        </archive>
-                        <maskClasses>com.google.common.</maskClasses>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <finalName>${project.artifactId}</finalName>
         <plugins>
-            <plugin>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.2</version>
-                <configuration>
-                    <artifactSet>
-                        <includes>
-                            <include>org.apache.jclouds*:*</include>
-                            <include>com.google.guava:*</include>
-                        </includes>
-                    </artifactSet>
-                    <relocations>
-                        <relocation>
-                            <pattern>com.google.common</pattern>
-                            <shadedPattern>shaded.com.google.common</shadedPattern>
-                        </relocation>
-                    </relocations>
-                </configuration>
-            </plugin>
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <executions>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <source>1.6</source>
-                            <target>1.6</target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>default-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <source>1.6</source>
-                            <target>1.6</target>
-                        </configuration>
-                    </execution>
-                </executions>
+                <version>3.2</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <showDeprecation>true</showDeprecation>
+                    <showWarnings>true</showWarnings>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
-                <version>${hpi.plugin.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                        <version>${guava.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.kohsuke.stapler</groupId>
-                        <artifactId>stapler</artifactId>
-                        <version>${stapler.version}</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <dependentWarExcludes>org.apache.jclouds*,com.google.guava*</dependentWarExcludes>
-                    <archive>
-                        <manifestEntries>
-                            <Mask-Classes>com.google.common</Mask-Classes>
-                        </manifestEntries>
-                    </archive>
-                    <maskClasses>com.google.common.</maskClasses>
-                </configuration>
+                <!-- version and config in from pluginManagement -->
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <systemPropertyVariables>
+                        <underSurefireTest>true</underSurefireTest>
+                    </systemPropertyVariables>
                     <excludes>
                         <exclude>**/*LiveTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.4</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failOnViolation>false</failOnViolation>
+                    <verbose>true</verbose>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>2.5.2</version>
+                <configuration>
+                    <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
+                    <failOnError>false</failOnError>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.3</version>
+            </plugin>
+        </plugins>
+    </reporting>
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/jclouds-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/jclouds-plugin.git</developerConnection>

@@ -7,5 +7,8 @@ work
 release.properties
 .idea
 *.iml
+*.swp
 **/dependency-reduced-pom.xml
 **/target
+.DS_Store
+.java-version

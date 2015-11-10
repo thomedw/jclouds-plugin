@@ -26,7 +26,6 @@ import org.jclouds.rest.AuthorizationException;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -41,6 +40,7 @@ public class BlobStorePublisher extends Recorder implements Describable<Publishe
     private static final Logger LOGGER = Logger.getLogger(BlobStorePublisher.class.getName());
 
     private String profileName;
+
     @Extension
     public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
     private final List<BlobStoreEntry> entries;
@@ -139,20 +139,25 @@ public class BlobStorePublisher extends Recorder implements Describable<Publishe
                 String expandedSource = Util.replaceMacro(blobStoreEntry.sourceFile, envVars);
                 String expandedContainer = Util.replaceMacro(blobStoreEntry.container, envVars);
                 FilePath ws = build.getWorkspace();
-                FilePath[] paths = ws.list(expandedSource);
-                String wsPath = ws.getRemote();
+                if (null != ws) {
+                    FilePath[] paths = ws.list(expandedSource);
+                    String wsPath = ws.getRemote();
 
-                if (paths.length == 0) {
-                    // try to do error diagnostics
-                    log(listener.getLogger(), "No file(s) found: " + expandedSource);
-                    String error = ws.validateAntFileMask(expandedSource);
-                    if (error != null)
-                        log(listener.getLogger(), error);
-                }
-                for (FilePath src : paths) {
-                    String expandedPath = getDestinationPath(blobStoreEntry.path, blobStoreEntry.keepHierarchy, wsPath, src, envVars);
-                    log(listener.getLogger(), "container=" + expandedContainer + ", path=" + expandedPath + ", file=" + src.getName());
-                    blobStoreProfile.upload(expandedContainer, expandedPath, src);
+                    if (paths.length == 0) {
+                        // try to do error diagnostics
+                        log(listener.getLogger(), "No file(s) found: " + expandedSource);
+                        String error = ws.validateAntFileMask(expandedSource);
+                        if (error != null)
+                            log(listener.getLogger(), error);
+                    }
+                    for (FilePath src : paths) {
+                        String expandedPath = getDestinationPath(blobStoreEntry.path, blobStoreEntry.keepHierarchy, wsPath, src, envVars);
+                        log(listener.getLogger(), "container=" + expandedContainer + ", path=" + expandedPath + ", file=" + src.getName());
+                        blobStoreProfile.upload(expandedContainer, expandedPath, src);
+                    }
+                } else {
+                    log(listener.getLogger(), "Unable to fetch workspace (NULL)");
+                    build.setResult(Result.UNSTABLE);
                 }
             }
         } catch (AuthorizationException e) {
@@ -218,7 +223,6 @@ public class BlobStorePublisher extends Recorder implements Describable<Publishe
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
         private final CopyOnWriteList<BlobStoreProfile> profiles = new CopyOnWriteList<BlobStoreProfile>();
-        private static final Logger LOGGER = Logger.getLogger(DescriptorImpl.class.getName());
 
         public DescriptorImpl(Class<? extends Publisher> clazz) {
             super(clazz);

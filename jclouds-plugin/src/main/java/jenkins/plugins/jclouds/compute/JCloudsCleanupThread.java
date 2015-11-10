@@ -31,7 +31,12 @@ public final class JCloudsCleanupThread extends AsyncPeriodicWork {
     }
 
     private static JCloudsCleanupThread getInstance() {
-        return Jenkins.getInstance().getExtensionList(AsyncPeriodicWork.class).get(JCloudsCleanupThread.class);
+        return Jenkins.getActiveInstance().getExtensionList(AsyncPeriodicWork.class).get(JCloudsCleanupThread.class);
+    }
+
+    @Override
+    protected Level getNormalLoggingLevel() {
+        return Level.FINE;
     }
 
     @Override
@@ -40,16 +45,17 @@ public final class JCloudsCleanupThread extends AsyncPeriodicWork {
         ListeningExecutorService executor = MoreExecutors.listeningDecorator(Computer.threadPoolForRemoting);
         final ImmutableList.Builder<JCloudsComputer> computersToDeleteBuilder = ImmutableList.<JCloudsComputer>builder();
 
-        for (final Computer c : Jenkins.getInstance().getComputers()) {
+        for (final Computer c : Jenkins.getActiveInstance().getComputers()) {
             if (JCloudsComputer.class.isInstance(c)) {
-                if (((JCloudsComputer) c).getNode().isPendingDelete()) {
-                    final JCloudsComputer comp = (JCloudsComputer) c;
+                final JCloudsComputer comp = (JCloudsComputer) c;
+                final JCloudsSlave node = comp.getNode();
+                if (null != node && node.isPendingDelete()) {
                     computersToDeleteBuilder.add(comp);
                     ListenableFuture<?> f = executor.submit(new Runnable() {
                         public void run() {
                             logger.log(Level.INFO, "Deleting pending node " + comp.getName());
                             try {
-                                comp.getNode().terminate();
+                                node.terminate();
                             } catch (IOException e) {
                                 logger.log(Level.WARNING, "Failed to disconnect and delete " + c.getName() + ": " + e.getMessage());
                             } catch (InterruptedException e) {
